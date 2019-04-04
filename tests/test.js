@@ -52,23 +52,32 @@ test('css file route returns a status code of 200', (t) => {
 });
 
 test('API request', (t) => {
-
-    const scope = nock('https://backendcallingapi.herokuapp.com')
-      .get('/search?s=batman&apikey=4a8cc460')
-      .delay(2000)
-      .reply(200, {Response:"True"})
-
-
+    nock('http://www.omdbapi.com')
+        .get('/?s=batman&apikey=' + process.env.API_KEY)
+        .reply(200, {
+            "Search": [
+                {
+                    "Title": "Batman Begins",
+                    "Year": "2005",
+                    "imdbID": "tt0372784",
+                    "Type": "movie",
+                    "Poster": "https://m.media-amazon.com/images/M/MV5BZmUwNGU2ZmItMmRiNC00MjhlLTg5YWUtODMyNzkxODYzMmZlXkEyXkFqcGdeQXVyNTIzOTk5ODM@._V1_SX300.jpg"
+                }
+            ]
+        });
+        
     supertest(router)
         .get("/search?s=batman")
         .expect(200)
         .expect('Content-Type', /json/)
         .end((err, res) => {
             t.error(err);
-            t.equal(res.body[0].Title, "Batman Begins", `Title should equal to ${res.body[0].Title}`);
-            nock.cleanAll();
+            t.equal(res.statusCode, 200, 'Should return 200');
+            t.equal(res.body[0].Title, 'Batman Begins', 'Should return correct first item')
+            t.deepEqual(nock.pendingMocks(), [], 'No requests left');
+            t.equal(nock.isDone(), true, 'All requests were satisfied');
+            nock.cleanAll()
             t.end();
-
         });
 });
 
